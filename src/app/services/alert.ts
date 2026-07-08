@@ -1,12 +1,22 @@
 export type AlertSeverity = 'info' | 'success' | 'warning' | 'error';
 
-const SEVERITY_META: Record<AlertSeverity, { emoji: string; color: string; label: string }> = {
+export interface AlertInput {
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  context?: Record<string, string>;
+}
+
+export const SEVERITY_META: Record<AlertSeverity, { emoji: string; color: string; label: string }> = {
   info: { emoji: '🔵', color: '#2563eb', label: 'Info' },
   success: { emoji: '🟢', color: '#16a34a', label: 'Success' },
   warning: { emoji: '🟡', color: '#d97706', label: 'Warning' },
   error: { emoji: '🔴', color: '#dc2626', label: 'Error' },
 };
 
+const contextEntries = (context?: Record<string, string>) => Object.entries(context ?? {});
+
+// Escape for HTML contexts (email body).
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -15,24 +25,26 @@ function escapeHtml(value: string) {
     .replace(/"/g, '&quot;');
 }
 
-export function renderAlertEmail({
-  severity,
-  title,
-  message,
-  context,
-}: {
-  severity: AlertSeverity;
-  title: string;
-  message: string;
-  context?: Record<string, string>;
-}) {
-  const { emoji, color, label } = SEVERITY_META[severity];
-  const subject = `${emoji} ${title}`;
-  const contextEntries = Object.entries(context ?? {});
+// Plain text — used by SMS, Slack, Telegram, and as the email fallback.
+export function renderText({ severity, title, message, context }: AlertInput) {
+  const { label } = SEVERITY_META[severity];
+  const context_ = contextEntries(context)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n');
+  return [`[${label.toUpperCase()}] ${title}`, '', message, context_ ? `\n${context_}` : '']
+    .filter(Boolean)
+    .join('\n');
+}
 
-  const contextHtml = contextEntries.length
+// HTML email with a severity-coloured header bar.
+export function renderEmail(alert: AlertInput) {
+  const { emoji, color, label } = SEVERITY_META[alert.severity];
+  const subject = `${emoji} ${alert.title}`;
+  const entries = contextEntries(alert.context);
+
+  const contextHtml = entries.length
     ? `<table style="width:100%;border-collapse:collapse;margin-top:16px;">
-        ${contextEntries
+        ${entries
           .map(
             ([key, value]) => `<tr>
               <td style="padding:4px 12px 4px 0;color:#666;font-size:13px;vertical-align:top;white-space:nowrap;">${escapeHtml(key)}</td>
@@ -52,18 +64,13 @@ export function renderAlertEmail({
       <span style="font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:${color};">${label}</span>
     </div>
     <div style="padding:24px;">
-      <h1 style="margin:0 0 12px 0;font-size:20px;color:#111;">${escapeHtml(title)}</h1>
-      <p style="margin:0;font-size:14px;line-height:1.6;color:#333;white-space:pre-wrap;">${escapeHtml(message)}</p>
+      <h1 style="margin:0 0 12px 0;font-size:20px;color:#111;">${escapeHtml(alert.title)}</h1>
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#333;white-space:pre-wrap;">${escapeHtml(alert.message)}</p>
       ${contextHtml}
     </div>
   </div>
 </body>
 </html>`;
 
-  const textContext = contextEntries.map(([key, value]) => `${key}: ${value}`).join('\n');
-  const text = [`[${label.toUpperCase()}] ${title}`, '', message, textContext ? `\n${textContext}` : '']
-    .filter(Boolean)
-    .join('\n');
-
-  return { subject, html, text };
+  return { subject, html, text: renderText(alert) };
 }

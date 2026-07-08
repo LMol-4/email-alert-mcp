@@ -1,6 +1,8 @@
 # email-alert-mcp
 
-A lightweight MCP server that lets agents send email alerts — useful for notifying a human when a scheduled job fails, data is missing, or something otherwise needs attention.
+A lightweight, multichannel MCP server that lets agents send alerts — useful for notifying a human when a scheduled job fails, data is missing, or something otherwise needs attention.
+
+Supports email, Slack, Telegram, SMS, and generic webhooks. A channel is enabled simply by setting its env vars — no separate config file to keep in sync. At least one channel must be configured; `send_alert` delivers to all configured channels at once.
 
 ## Tool
 
@@ -8,20 +10,21 @@ A lightweight MCP server that lets agents send email alerts — useful for notif
 
 | Param      | Type                              | Required | Description                                                        |
 | ---------- | --------------------------------- | -------- | -------------------------------------------------------------------- |
-| `severity` | `info` \| `success` \| `warning` \| `error` | No (default `info`) | Controls the color/emoji used in the email.               |
+| `severity` | `info` \| `success` \| `warning` \| `error` | No (default `info`) | Controls the color/emoji used in the alert.               |
 | `title`    | string                            | Yes      | Short headline for the alert.                                        |
 | `message`  | string                            | Yes      | Body of the alert.                                                    |
 | `context`  | object of string key/value pairs  | No       | Extra details rendered as a list (e.g. job name, error code).        |
 
-Alerts always go to the server-configured `ALERT_EMAIL`.
-
 ## Setup
 
 1. Copy `.env.example` to `.env` and fill in:
-   - `SENDING_EMAIL` — the "from" address (must be on a domain verified with Resend).
-   - `RESEND_API_KEY` — from [resend.com](https://resend.com) (Nice free tier).
    - `AUTH_API_KEY` — any random secret string; callers must send it as `Authorization: Bearer <key>`.
-   - `ALERT_EMAIL` — the recipient for all alerts.
+   - Then configure one or more channels (leave a channel's vars unset to disable it):
+     - **Email** — `SENDING_EMAIL`, `RESEND_API_KEY` (from [resend.com](https://resend.com)), `ALERT_EMAIL` (one address, or several comma-separated).
+     - **Slack** — `SLACK_WEBHOOK_URL` (an [incoming webhook](https://api.slack.com/messaging/webhooks)).
+     - **Telegram** — `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+     - **SMS** — `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `ALERT_PHONE_NUMBER` (from [twilio.com](https://twilio.com)).
+     - **Webhook** — `WEBHOOK_URLS`, comma-separated; each receives the alert as JSON.
 2. `pnpm install`
 3. `pnpm dev`
 
@@ -42,3 +45,7 @@ Register the server with a static bearer token header, for example in Claude Cod
 ## Testing
 
 Test with `npx @modelcontextprotocol/inspector@latest http://localhost:3000 undefined`
+
+## Roadmap
+
+- Phone Call
