@@ -2,24 +2,41 @@ import { z } from 'zod';
 import { createMcpHandler } from 'mcp-handler';
 import { sendEmail } from '@/app/services/email';
 import { isAuthorized } from '@/app/services/auth';
+import { renderAlertEmail } from '@/app/alertTemplate';
 
 const mcpHandler = createMcpHandler(
   (server) => {
     server.registerTool(
-      'send_email',
+      'send_alert',
       {
-        title: 'Send Email Alert',
-        description: 'Send an email alert',
+        title: 'Send Alert',
+        description:
+          'Send an alert email. Use this to notify a human when something needs their attention (a job failed, data is missing, a task succeeded, etc).',
         inputSchema: z.object({
-          to: z.email().or(z.array(z.email())),
-          subject: z.string(),
-          html: z.string(),
+          to: z
+            .email()
+            .or(z.array(z.email()))
+            .optional()
+            .describe('Recipient(s). Defaults to the server-configured ALERT_EMAIL if omitted.'),
+          severity: z.enum(['info', 'success', 'warning', 'error']).default('info'),
+          title: z.string().describe('Short headline for the alert.'),
+          message: z.string().describe('The body of the alert.'),
+          context: z
+            .record(z.string(), z.string())
+            .optional()
+            .describe('Optional key/value details shown alongside the message (e.g. job name, error code).'),
         }),
       },
-      async ({ to, subject, html }) => {
-        const data = await sendEmail(to, subject, html);
+      async ({ to, severity, title, message, context }) => {
+        const recipient = to ?? process.env.ALERT_EMAIL;
+        if (!recipient) {
+          throw new Error('No recipient specified and ALERT_EMAIL is not configured on the server.');
+        }
+
+        const { subject, html, text } = renderAlertEmail({ severity, title, message, context });
+        const data = await sendEmail(recipient, subject, html, text);
         return {
-          content: [{ type: 'text', text: `Email sent successfully. ID: ${data?.id || 'unknown'}` }],
+          content: [{ type: 'text', text: `Alert sent successfully. ID: ${data?.id || 'unknown'}` }],
         };
       },
     );
@@ -27,10 +44,10 @@ const mcpHandler = createMcpHandler(
   {},
   { basePath: '/api' },
 );
- 
+
 async function handler(request: Request) {
   if (!isAuthorized(request)) {
-    return new Response('Unauthorized', { status: 401 });
+    return new Response('Unauthorized', { status: 401, headers: { 'WWW-Authenticate': 'Bearer' } });
   }
   return mcpHandler(request);
 }
