@@ -1,4 +1,4 @@
-# email-alert-mcp
+# alert-my-human
 
 A lightweight, multichannel MCP server that lets agents send alerts — useful for notifying a human when a scheduled job fails, data is missing, or something otherwise needs attention.
 
@@ -44,7 +44,7 @@ Register the server with a static bearer token header, for example in Claude Cod
 
 ## Testing
 
-Test with `npx @modelcontextprotocol/inspector@latest http://localhost:3000 undefined`
+Run `npx @modelcontextprotocol/inspector@latest`, then connect it to `http://localhost:3000/api/mcp` with an `Authorization: Bearer <AUTH_API_KEY>` header.
 
 ## Roadmap
 
