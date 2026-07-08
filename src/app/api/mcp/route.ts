@@ -1,17 +1,31 @@
 import { z } from 'zod';
 import { createMcpHandler } from 'mcp-handler';
 import { isAuthorized } from '@/app/services/auth';
-import { CHANNELS } from '@/app/services/channels';
+import { listChannels, sendAlert } from '@/app/services/tools';
 
 const mcpHandler = createMcpHandler(
   (server) => {
+    server.registerTool(
+      'list_channels',
+      {
+        title: 'List Channels',
+        description: 'List which alert channels are currently configured. Call this before send_alert to know which channel names are valid.',
+        inputSchema: z.object({}),
+      },
+      async () => listChannels(),
+    );
+
     server.registerTool(
       'send_alert',
       {
         title: 'Send Alert',
         description:
-          'Send an alert. Use this to notify a human when something needs their attention (a job failed, data is missing, a task succeeded, etc). Delivered to every configured channel (email, Slack, Telegram, SMS, webhooks).',
+          'Send an alert to specific channels. Use this to notify a human when something needs their attention (a job failed, data is missing, a task succeeded, etc). Call list_channels first to see which channel names are configured.',
         inputSchema: z.object({
+          channels: z
+            .array(z.string())
+            .min(1)
+            .describe('Channel names to deliver to (e.g. "slack", "email"). Call list_channels to see what is configured.'),
           severity: z.enum(['info', 'success', 'warning', 'error']).default('info'),
           title: z.string().describe('Short headline for the alert.'),
           message: z.string().describe('The body of the alert.'),
@@ -21,30 +35,7 @@ const mcpHandler = createMcpHandler(
             .describe('Optional key/value details shown alongside the message (e.g. job name, error code).'),
         }),
       },
-      async ({ severity, title, message, context }) => {
-        const channels = CHANNELS.filter((channel) => channel.isConfigured());
-        if (!channels.length) {
-          throw new Error('No alert channels are configured. Set at least one channel\'s env vars — see .env.example.');
-        }
-
-        const alert = { severity, title, message, context };
-        const results = await Promise.allSettled(channels.map((channel) => channel.send(alert)));
-
-        const sent = channels.filter((_, i) => results[i].status === 'fulfilled').map((channel) => channel.name);
-        const failed = results
-          .map((result, i) => ({ result, name: channels[i].name }))
-          .filter(({ result }) => result.status === 'rejected')
-          .map(({ result, name }) => `${name} (${(result as PromiseRejectedResult).reason})`);
-
-        const summary = [
-          sent.length ? `Sent via: ${sent.join(', ')}.` : '',
-          failed.length ? `Failed: ${failed.join(', ')}.` : '',
-        ]
-          .filter(Boolean)
-          .join(' ');
-
-        return { content: [{ type: 'text', text: summary }] };
-      },
+      async (input) => sendAlert(input),
     );
   },
   {},

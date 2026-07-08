@@ -2,14 +2,19 @@
 
 A lightweight, multichannel MCP server that lets agents send alerts — useful for notifying a human when a scheduled job fails, data is missing, or something otherwise needs attention.
 
-Supports email, Slack, Telegram, SMS, and generic webhooks. A channel is enabled simply by setting its env vars — no separate config file to keep in sync. At least one channel must be configured; `send_alert` delivers to all configured channels at once.
+Supports email, Slack, Telegram, SMS, and generic webhooks. A channel is enabled simply by setting its env vars — no separate config file to keep in sync. Callers pick which configured channels to deliver to on each call.
 
-## Tool
+## Tools
+
+### `list_channels`
+
+Returns which channels are currently configured. No params. Call this before `send_alert` to know which channel names are valid.
 
 ### `send_alert`
 
 | Param      | Type                              | Required | Description                                                        |
 | ---------- | --------------------------------- | -------- | -------------------------------------------------------------------- |
+| `channels` | array of channel names            | Yes      | Which channels to deliver to (e.g. `["slack", "email"]`). See `list_channels`. |
 | `severity` | `info` \| `success` \| `warning` \| `error` | No (default `info`) | Controls the color/emoji used in the alert.               |
 | `title`    | string                            | Yes      | Short headline for the alert.                                        |
 | `message`  | string                            | Yes      | Body of the alert.                                                    |
@@ -44,7 +49,7 @@ Register the server with a static bearer token header, for example in Claude Cod
 
 ## Testing
 
-Run `npx @modelcontextprotocol/inspector@latest`, then connect it to `http://localhost:3000/api/mcp` with an `Authorization: Bearer <AUTH_API_KEY>` header.
+Run `npx @modelcontextprotocol/inspector@latest http://localhost:3000 undefined`, then connect it to `http://localhost:3000/api/mcp` with an `Authorization: Bearer <AUTH_API_KEY>` header.
 
 ## Roadmap
 
