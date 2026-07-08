@@ -2,7 +2,7 @@
 
 A lightweight, multichannel MCP server that lets agents send alerts — useful for notifying a human when a scheduled job fails, data is missing, or something otherwise needs attention.
 
-Supports email, Slack, Telegram, SMS, and generic webhooks. A channel is enabled simply by setting its env vars — no separate config file to keep in sync. Callers pick which configured channels to deliver to on each call.
+Supports email, Slack, Telegram, SMS, and generic webhooks. Enabled a channel by setting its env vars. Callers pick which configured channels to deliver to on each call.
 
 ## Tools
 
@@ -53,4 +53,5 @@ Run `npx @modelcontextprotocol/inspector@latest http://localhost:3000 undefined`
 
 ## Roadmap
 
-- Phone Call
+- Landing page with prompt to auto deploy via vercel
+- Phone call alerts
