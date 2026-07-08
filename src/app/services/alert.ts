@@ -16,7 +16,7 @@ export const SEVERITY_META: Record<AlertSeverity, { emoji: string; color: string
 
 const contextEntries = (context?: Record<string, string>) => Object.entries(context ?? {});
 
-// Escape for HTML contexts (email body).
+// Escape for HTML contexts (email body, Telegram HTML parse mode).
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -25,7 +25,12 @@ function escapeHtml(value: string) {
     .replace(/"/g, '&quot;');
 }
 
-// Plain text — used by SMS, Slack, Telegram, and as the email fallback.
+// Escape the three characters Slack reserves in mrkdwn text.
+function escapeSlack(value: string) {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Plain text — used by SMS and as the email/Slack notification fallback.
 export function renderText({ severity, title, message, context }: AlertInput) {
   const { label } = SEVERITY_META[severity];
   const context_ = contextEntries(context)
@@ -73,4 +78,40 @@ export function renderEmail(alert: AlertInput) {
 </html>`;
 
   return { subject, html, text: renderText(alert) };
+}
+
+// Slack incoming-webhook payload: blocks wrapped in a colour-barred attachment.
+export function renderSlack(alert: AlertInput) {
+  const { emoji, color } = SEVERITY_META[alert.severity];
+  const entries = contextEntries(alert.context);
+
+  const blocks: unknown[] = [
+    {
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*${emoji} ${escapeSlack(alert.title)}*\n${escapeSlack(alert.message)}` },
+    },
+  ];
+  if (entries.length) {
+    blocks.push({
+      type: 'section',
+      fields: entries.slice(0, 10).map(([key, value]) => ({
+        type: 'mrkdwn',
+        text: `*${escapeSlack(key)}*\n${escapeSlack(value)}`,
+      })),
+    });
+  }
+
+  return { text: `${emoji} ${alert.title}`, attachments: [{ color, blocks }] };
+}
+
+// Telegram sendMessage payload (minus chat_id) using HTML parse mode.
+export function renderTelegram(alert: AlertInput) {
+  const { emoji } = SEVERITY_META[alert.severity];
+  const lines = [`${emoji} <b>${escapeHtml(alert.title)}</b>`, '', escapeHtml(alert.message)];
+  const entries = contextEntries(alert.context);
+  if (entries.length) {
+    lines.push('');
+    for (const [key, value] of entries) lines.push(`<b>${escapeHtml(key)}:</b> ${escapeHtml(value)}`);
+  }
+  return { text: lines.join('\n'), parse_mode: 'HTML' as const };
 }
