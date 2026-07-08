@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { createMcpHandler } from 'mcp-handler';
 import { sendEmail } from '@/app/services/email';
+import { isAuthorized } from '@/app/services/auth';
 
-const handler = createMcpHandler(
+const mcpHandler = createMcpHandler(
   (server) => {
     server.registerTool(
       'send_email',
@@ -27,4 +28,11 @@ const handler = createMcpHandler(
   { basePath: '/api' },
 );
  
+async function handler(request: Request) {
+  if (!isAuthorized(request)) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+  return mcpHandler(request);
+}
+
 export { handler as GET, handler as POST, handler as DELETE };
