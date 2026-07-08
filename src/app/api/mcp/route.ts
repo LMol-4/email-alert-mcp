@@ -13,11 +13,6 @@ const mcpHandler = createMcpHandler(
         description:
           'Send an alert email. Use this to notify a human when something needs their attention (a job failed, data is missing, a task succeeded, etc).',
         inputSchema: z.object({
-          to: z
-            .email()
-            .or(z.array(z.email()))
-            .optional()
-            .describe('Recipient(s). Defaults to the server-configured ALERT_EMAIL if omitted.'),
           severity: z.enum(['info', 'success', 'warning', 'error']).default('info'),
           title: z.string().describe('Short headline for the alert.'),
           message: z.string().describe('The body of the alert.'),
@@ -27,10 +22,10 @@ const mcpHandler = createMcpHandler(
             .describe('Optional key/value details shown alongside the message (e.g. job name, error code).'),
         }),
       },
-      async ({ to, severity, title, message, context }) => {
-        const recipient = to ?? process.env.ALERT_EMAIL;
+      async ({ severity, title, message, context }) => {
+        const recipient = process.env.ALERT_EMAIL;
         if (!recipient) {
-          throw new Error('No recipient specified and ALERT_EMAIL is not configured on the server.');
+          throw new Error('ALERT_EMAIL is not configured on the server.');
         }
 
         const { subject, html, text } = renderAlertEmail({ severity, title, message, context });
