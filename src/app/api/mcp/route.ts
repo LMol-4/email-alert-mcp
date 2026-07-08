@@ -1,16 +1,24 @@
 import { z } from 'zod';
 import { createMcpHandler } from 'mcp-handler';
- 
+import { sendEmail } from '@/app/services/email';
+
 const handler = createMcpHandler(
   (server) => {
-    server.tool(
-      'roll_dice',
-      'Rolls an N-sided die',
-      { sides: z.number().int().min(2) },
-      async ({ sides }) => {
-        const value = 1 + Math.floor(Math.random() * sides);
+    server.registerTool(
+      'send_email',
+      {
+        title: 'Send Email Alert',
+        description: 'Send an email alert',
+        inputSchema: z.object({
+          to: z.email().or(z.array(z.email())),
+          subject: z.string(),
+          html: z.string(),
+        }),
+      },
+      async ({ to, subject, html }) => {
+        const data = await sendEmail(to, subject, html);
         return {
-          content: [{ type: 'text', text: `🎲 You rolled a ${value}!` }],
+          content: [{ type: 'text', text: `Email sent successfully. ID: ${data?.id || 'unknown'}` }],
         };
       },
     );
