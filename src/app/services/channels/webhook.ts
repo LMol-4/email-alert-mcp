@@ -9,15 +9,20 @@ export const webhookChannel: Channel = {
       .map((url) => url.trim())
       .filter(Boolean);
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       urls.map(async (url) => {
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(alert),
         });
-        if (!res.ok) throw new Error(`Webhook ${url} failed: ${res.status}`);
+        if (!res.ok) throw new Error(`${url} → ${res.status}`);
       }),
     );
+
+    const failed = results
+      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+      .map((result) => result.reason.message);
+    if (failed.length) throw new Error(failed.join('; '));
   },
 };

@@ -1,4 +1,5 @@
 export function isAuthorized(request: Request): boolean {
-  const authHeader = request.headers.get('authorization');
-  return authHeader === `Bearer ${process.env.AUTH_API_KEY}`;
+  const key = process.env.AUTH_API_KEY;
+  if (!key) return false;
+  return request.headers.get('authorization') === `Bearer ${key}`;
 }
