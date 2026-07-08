@@ -1,0 +1,1 @@
+Basic email alert MCP for your agents
