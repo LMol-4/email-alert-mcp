@@ -1,4 +1,5 @@
 import type { Channel } from './types';
+import { fetchWithRetry } from './http';
 
 export const webhookChannel: Channel = {
   name: 'webhook',
@@ -11,7 +12,7 @@ export const webhookChannel: Channel = {
 
     const results = await Promise.allSettled(
       urls.map(async (url) => {
-        const res = await fetch(url, {
+        const res = await fetchWithRetry(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(alert),

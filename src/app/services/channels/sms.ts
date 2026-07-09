@@ -1,5 +1,6 @@
 import { renderText } from '@/app/services/alert';
 import type { Channel } from './types';
+import { fetchWithRetry, truncateBody } from './http';
 
 export const smsChannel: Channel = {
   name: 'sms',
@@ -18,11 +19,11 @@ export const smsChannel: Channel = {
       From: process.env.TWILIO_FROM_NUMBER!,
       Body: renderText(alert),
     });
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    const res = await fetchWithRetry(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: 'POST',
       headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     });
-    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    if (!res.ok) throw new Error(`${res.status} ${truncateBody(await res.text())}`);
   },
 };

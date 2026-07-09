@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { renderEmail } from '@/app/services/alert';
 import type { Channel } from './types';
+import { withTimeout } from './http';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -14,13 +15,15 @@ export const emailChannel: Channel = {
       .map((address) => address.trim())
       .filter(Boolean);
 
-    const { error } = await resend.emails.send({
-      from: `Alert <${process.env.SENDING_EMAIL}>`,
-      to,
-      subject,
-      html,
-      text,
-    });
+    const { error } = await withTimeout(
+      resend.emails.send({
+        from: `Alert <${process.env.SENDING_EMAIL}>`,
+        to,
+        subject,
+        html,
+        text,
+      }),
+    );
     if (error) throw new Error(error.message);
   },
 };

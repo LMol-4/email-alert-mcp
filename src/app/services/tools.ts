@@ -32,7 +32,10 @@ export async function sendAlert(input: {
     ...ready
       .map((channel, i) => ({ channel, result: results[i] }))
       .filter(({ result }) => result.status === 'rejected')
-      .map(({ channel, result }) => `${channel.name} (${(result as PromiseRejectedResult).reason})`),
+      .map(({ channel, result }) => {
+        const reason = (result as PromiseRejectedResult).reason;
+        return `${channel.name} (${reason instanceof Error ? reason.message : String(reason)})`;
+      }),
     ...unconfigured.map((channel) => `${channel.name} (not configured)`),
     ...unknown.map((name) => `${name} (unknown channel)`),
   ];

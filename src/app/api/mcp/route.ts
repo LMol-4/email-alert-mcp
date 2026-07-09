@@ -3,6 +3,10 @@ import { createMcpHandler } from 'mcp-handler';
 import { isAuthorized } from '@/app/services/auth';
 import { listChannels, sendAlert } from '@/app/services/tools';
 
+// Cap the serverless function just above the 10s per-delivery timeout so a
+// pathological hang can't burn the full function budget.
+export const maxDuration = 15;
+
 const mcpHandler = createMcpHandler(
   (server) => {
     server.registerTool(

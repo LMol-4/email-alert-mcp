@@ -4,6 +4,12 @@ A lightweight, multichannel MCP server that lets agents send alerts — useful f
 
 Supports email, Slack, Telegram, SMS, and generic webhooks. Enabled a channel by setting its env vars. Callers pick which configured channels to deliver to on each call.
 
+## Deploy
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FLMol-4%2Falert-my-human&env=AUTH_API_KEY&envDescription=A%20random%20secret%20callers%20send%20as%20a%20bearer%20token&envLink=https%3A%2F%2Fgithub.com%2FLMol-4%2Falert-my-human%23setup)
+
+One-click deploy prompts only for `AUTH_API_KEY` (the one required var). Add whichever channel vars you want afterward in the Vercel dashboard (Project → Settings → Environment Variables) — see [Setup](#setup) below.
+
 ## Tools
 
 ### `list_channels`
@@ -19,6 +25,8 @@ Returns which channels are currently configured. No params. Call this before `se
 | `title`    | string                            | Yes      | Short headline for the alert.                                        |
 | `message`  | string                            | Yes      | Body of the alert.                                                    |
 | `context`  | object of string key/value pairs  | No       | Extra details rendered as a list (e.g. job name, error code).        |
+
+Channels are delivered independently, so one failing channel doesn't block the others — the response reports which channels sent and which failed. Each delivery is bounded by a 10s timeout and retried once on a transient failure (network error, timeout, HTTP 429, or 5xx).
 
 ## Setup
 
