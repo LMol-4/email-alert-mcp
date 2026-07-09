@@ -1,6 +1,6 @@
 # alert-my-human
 
-A lightweight, multichannel MCP server that lets agents send alerts — useful for notifying a human when a scheduled job fails, data is missing, or something otherwise needs attention.
+A lightweight MCP server that lets agents send multichannel alerts — useful for notifying a human when a scheduled job fails, data is missing, or something otherwise needs attention.
 
 Supports email, Slack, Telegram, SMS, and generic webhooks. Enabled a channel by setting its env vars. Callers pick which configured channels to deliver to on each call.
 
@@ -61,5 +61,4 @@ Run `npx @modelcontextprotocol/inspector@latest http://localhost:3000 undefined`
 
 ## Roadmap
 
-- Landing page with prompt to auto deploy via vercel
 - Phone call alerts
